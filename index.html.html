@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Dopamine Rewire Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;700&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --accent: #7c5cfc;
+    --accent2: #fc5c7c;
+    --accent3: #5cfcbc;
+    --text: #e8e8f0;
+    --text2: #8888aa;
+    --text3: #5555770;
+    --yes: #3ddc84;
+    --no: #fc5c7c;
+    --warn: #ffc46b;
+    --radius: 12px;
+    --font-mono: 'Space Mono', monospace;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,15,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .app-title {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    flex: 1;
+  }
+  .date-badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text2);
+    background: var(--surface2);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  /* NAV */
+  .nav-scroll {
+    display: flex;
+    gap: 6px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 53px;
+    z-index: 99;
+  }
+  .nav-scroll::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .nav-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* DASHBOARD */
+  .dashboard {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .score-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    text-align: center;
+  }
+  .score-card .score-num {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .score-card .score-label {
+    font-size: 10px;
+    color: var(--text2);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .progress-bar-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .pb-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 8px;
+  }
+  .pb-label span:last-child {
+    color: var(--accent3);
+    font-family: var(--font-mono);
+  }
+  .pb {
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .pb-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+
+  .day-phase {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .phase-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .phase-card:hover { border-color: var(--accent); }
+  .phase-icon { font-size: 20px; }
+  .phase-name { font-size: 13px; font-weight: 600; }
+  .phase-progress { font-size: 11px; color: var(--text2); font-family: var(--font-mono); }
+
+  /* SECTIONS */
+  .section-page {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .section-header {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-header .sh-icon { font-size: 22px; }
+  .section-header .sh-info h2 { font-size: 15px; font-weight: 700; }
+  .section-header .sh-info p { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  /* FEATURE CARDS */
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .feature-top {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .feat-num {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    background: rgba(124,92,252,0.12);
+    padding: 2px 7px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .feat-text h3 {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .feat-text .why {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+
+  /* INPUT TYPES */
+  .input-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .input-label { font-size: 11px; color: var(--text2); }
+
+  /* Slider */
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  input[type=range] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--surface2);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(124,92,252,0.5);
+  }
+  .slider-val {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 28px;
+    text-align: right;
+  }
+
+  /* Yes/No */
+  .yn-row { display: flex; gap: 8px; }
+  .yn-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .yn-btn.yes.active { background: rgba(61,220,132,0.15); border-color: var(--yes); color: var(--yes); }
+  .yn-btn.no.active { background: rgba(252,92,124,0.15); border-color: var(--no); color: var(--no); }
+  .yn-btn:not(.active):hover { border-color: var(--text2); }
+
+  /* Multi-choice */
+  .choice-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .choice-btn {
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--font-body);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .choice-btn.active {
+    background: rgba(124,92,252,0.2);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  /* Text input */
+  .text-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    outline: none;
+    resize: none;
+  }
+  .text-input:focus { border-color: var(--accent); }
+
+  /* Number input */
+  .num-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    width: 100%;
+    outline: none;
+  }
+  .num-input:focus { border-color: var(--accent); }
+
+  /* Time input */
+  .time-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    width: 100%;
+    outline: none;
+    color-scheme: dark;
+  }
+  .time-input:focus { border-color: var(--accent); }
+
+  /* Bristol scale */
+  .bristol-row { display: flex; gap: 4px; }
+  .bristol-btn {
+    flex: 1;
+    padding: 8px 4px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-mono);
+  }
+  .bristol-btn.active { background: rgba(124,92,252,0.2); border-color: var(--accent); color: var(--text); }
+
+  /* HISTORY PAGE */
+  .history-entry {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .history-date {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .history-score-big {
+    font-family: var(--font-mono);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent3);
+  }
+  .history-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .hs-item {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+  }
+  .hs-val { font-family: var(--font-mono); font-size: 16px; color: var(--text); }
+  .hs-key { font-size: 9px; color: var(--text2); margin-top: 2px; text-transform: uppercase; }
+
+  /* SAVE BUTTON */
+  .save-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    z-index: 200;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 28px;
+    padding: 14px 24px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 24px rgba(124,92,252,0.4);
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .save-fab:active { transform: scale(0.96); }
+  .save-toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--yes);
+    color: #000;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 300;
+    white-space: nowrap;
+  }
+  .save-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* PHASE MARKERS */
+  .timing-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .t-morning { background: rgba(255,196,107,0.15); color: var(--warn); }
+  .t-allday { background: rgba(124,92,252,0.15); color: var(--accent); }
+  .t-evening { background: rgba(92,252,188,0.15); color: var(--accent3); }
+  .t-meal { background: rgba(252,92,124,0.15); color: var(--accent2); }
+  .t-session { background: rgba(61,220,132,0.15); color: var(--yes); }
+
+  /* PHASE HEADER in sections */
+  .phase-divider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 2px;
+  }
+  .pd-label {
+    font-size: 10px;
+    color: var(--text2);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .pd-line { flex: 1; height: 1px; background: var(--border); }
+
+  /* 90 day tracker widget */
+  .day-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 4px;
+  }
+  .day-dot {
+    aspect-ratio: 1;
+    border-radius: 3px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transition: background 0.2s;
+    cursor: default;
+  }
+  .day-dot.done { background: var(--accent); border-color: var(--accent); }
+  .day-dot.today { background: var(--accent2); border-color: var(--accent2); }
+  .day-dot.partial { background: var(--warn); border-color: var(--warn); }
+
+  /* THREE MASTER METRICS */
+  .master-metrics {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .mm-title {
+    font-size: 11px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: var(--font-mono);
+  }
+  .mm-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .mm-bar-wrap { flex: 1; }
+  .mm-bar-label { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .mm-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .mm-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+  .mm-val { font-family: var(--font-mono); font-size: 18px; font-weight: 700; min-width: 36px; text-align: right; }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text2);
+  }
+  .empty-state .es-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; line-height: 1.5; }
+
+  /* hidden */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="app-title">DOPAMINE REWIRE</div>
+  <div class="date-badge" id="dateBadge"></div>
+</div>
+
+<nav class="nav-scroll" id="mainNav">
+  <button class="nav-btn active" onclick="showPage('dashboard')">🏠 Dashboard</button>
+  <button class="nav-btn" onclick="showPage('morning')">🌅 Morning</button>
+  <button class="nav-btn" onclick="showPage('dopamine')">⚡ Dopamine</button>
+  <button class="nav-btn" onclick="showPage('brainfog')">🧠 Brain Fog</button>
+  <button class="nav-btn" onclick="showPage('sleep')">🌙 Sleep</button>
+  <button class="nav-btn" onclick="showPage('fitness')">💪 Fitness</button>
+  <button class="nav-btn" onclick="showPage('nutrition')">🥗 Nutrition</button>
+  <button class="nav-btn" onclick="showPage('focus')">📚 Focus</button>
+  <button class="nav-btn" onclick="showPage('hormonal')">🔬 Hormonal</button>
+  <button class="nav-btn" onclick="showPage('gut')">🫀 Gut</button>
+  <button class="nav-btn" onclick="showPage('mental')">💭 Mental</button>
+  <button class="nav-btn" onclick="showPage('environ')">🌿 Environ</button>
+  <button class="nav-btn" onclick="showPage('evening')">📊 Evening</button>
+  <button class="nav-btn" onclick="showPage('history')">📅 History</button>
+</nav>
+
+<div id="pages">
+
+<!-- ======= DASHBOARD ======= -->
+<div id="page-dashboard" class="dashboard">
+  <div class="score-row">
+    <div class="score-card">
+      <div class="score-num" id="dash-dayScore">—</div>
+      <div class="score-label">Day Score</div>
+    </div>
+    <div class="score-card">
+      <div class="score-num" id="dash-mood">—</div>
+      <div class="score-label">Morning Mood</div>
+    </div>
+    <div class="score-card">
+      <div class="score-num" id="dash-streak">0</div>
+      <div class="score-label">Abstinence</div>
+    </div>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="pb-label"><span>Today's Progress</span><span id="dash-progress">0 / 182</span></div>
+    <div class="pb"><div class="pb-fill" id="dash-pb" style="width:0%"></div></div>
+  </div>
+
+  <div class="master-metrics">
+    <div class="mm-title">Three Master Metrics</div>
+    <div class="mm-item">
+      <div class="mm-bar-wrap">
+        <div class="mm-bar-label">Morning Mood Baseline</div>
+        <div class="mm-bar"><div class="mm-bar-fill" id="mm1-fill" style="width:0%;background:var(--accent)"></div></div>
+      </div>
+      <div class="mm-val" id="mm1-val" style="color:var(--accent)">—</div>
+    </div>
+    <div class="mm-item">
+      <div class="mm-bar-wrap">
+        <div class="mm-bar-label">Study Session Enjoyment</div>
+        <div class="mm-bar"><div class="mm-bar-fill" id="mm2-fill" style="width:0%;background:var(--accent3)"></div></div>
+      </div>
+      <div class="mm-val" id="mm2-val" style="color:var(--accent3)">—</div>
+    </div>
+    <div class="mm-item">
+      <div class="mm-bar-wrap">
+        <div class="mm-bar-label">Protocol Adherence %</div>
+        <div class="mm-bar"><div class="mm-bar-fill" id="mm3-fill" style="width:0%;background:var(--accent2)"></div></div>
+      </div>
+      <div class="mm-val" id="mm3-val" style="color:var(--accent2)">—</div>
+    </div>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;">
+    <div style="font-size:11px;color:var(--text2);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">90-Day Rewire Progress</div>
+    <div class="day-grid" id="dayGrid"></div>
+    <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;">
+      <span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:var(--accent);border-radius:2px;display:inline-block"></span>Complete</span>
+      <span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:var(--warn);border-radius:2px;display:inline-block"></span>Partial</span>
+      <span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:var(--accent2);border-radius:2px;display:inline-block"></span>Today</span>
+    </div>
+  </div>
+
+  <div class="day-phase">
+    <div class="phase-card" onclick="showPage('morning')">
+      <span class="phase-icon">🌅</span>
+      <span class="phase-name">Morning</span>
+      <span class="phase-progress" id="p-morning">0/20</span>
+    </div>
+    <div class="phase-card" onclick="showPage('dopamine')">
+      <span class="phase-icon">⚡</span>
+      <span class="phase-name">Dopamine</span>
+      <span class="phase-progress" id="p-dopamine">0/20</span>
+    </div>
+    <div class="phase-card" onclick="showPage('brainfog')">
+      <span class="phase-icon">🧠</span>
+      <span class="phase-name">Brain Fog</span>
+      <span class="phase-progress" id="p-brainfog">0/20</span>
+    </div>
+    <div class="phase-card" onclick="showPage('sleep')">
+      <span class="phase-icon">🌙</span>
+      <span class="phase-name">Sleep</span>
+      <span class="phase-progress" id="p-sleep">0/16</span>
+    </div>
+    <div class="phase-card" onclick="showPage('fitness')">
+      <span class="phase-icon">💪</span>
+      <span class="phase-name">Fitness</span>
+      <span class="phase-progress" id="p-fitness">0/17</span>
+    </div>
+    <div class="phase-card" onclick="showPage('nutrition')">
+      <span class="phase-icon">🥗</span>
+      <span class="phase-name">Nutrition</span>
+      <span class="phase-progress" id="p-nutrition">0/18</span>
+    </div>
+    <div class="phase-card" onclick="showPage('focus')">
+      <span class="phase-icon">📚</span>
+      <span class="phase-name">Focus</span>
+      <span class="phase-progress" id="p-focus">0/15</span>
+    </div>
+    <div class="phase-card" onclick="showPage('hormonal')">
+      <span class="phase-icon">🔬</span>
+      <span class="phase-name">Hormonal</span>
+      <span class="phase-progress" id="p-hormonal">0/12</span>
+    </div>
+    <div class="phase-card" onclick="showPage('gut')">
+      <span class="phase-icon">🫀</span>
+      <span class="phase-name">Gut</span>
+      <span class="phase-progress" id="p-gut">0/12</span>
+    </div>
+    <div class="phase-card" onclick="showPage('mental')">
+      <span class="phase-icon">💭</span>
+      <span class="phase-name">Mental</span>
+      <span class="phase-progress" id="p-mental">0/12</span>
+    </div>
+    <div class="phase-card" onclick="showPage('environ')">
+      <span class="phase-icon">🌿</span>
+      <span class="phase-name">Environ</span>
+      <span class="phase-progress" id="p-environ">0/10</span>
+    </div>
+    <div class="phase-card" onclick="showPage('evening')">
+      <span class="phase-icon">📊</span>
+      <span class="phase-name">Evening</span>
+      <span class="phase-progress" id="p-evening">0/10</span>
+    </div>
+  </div>
+</div>
+
+<!-- ======= MORNING ======= -->
+<div id="page-morning" class="section-page hidden">
+  <div class="section-header">
+    <span class="sh-icon">🌅</span>
+    <div class="sh-info">
+      <h2>Morning Protocol</h2>
+      <p>Wake → 2 hours • Sets dopamine baseline for the day</p>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#001</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Wake Time</h3><p class="why">Circadian anchor — same time = dopamine baseline stability</p></div></div>
+    <div class="input-wrap">
+      <input class="time-input" type="time" id="f001" onchange="save('f001',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#002</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Alarm vs Natural Wake</h3><p class="why">Natural wakes = better cortisol curve</p></div></div>
+    <div class="choice-row">
+      <button class="choice-btn" onclick="saveChoice('f002','Natural',this)">Natural</button>
+      <button class="choice-btn" onclick="saveChoice('f002','1 alarm',this)">1 Alarm</button>
+      <button class="choice-btn" onclick="saveChoice('f002','2+ alarms',this)">2+ Alarms</button>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#003</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>First Phone Check Delay</h3><p class="why">Delaying phone protects baseline dopamine from social spike</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">Minutes after wake before phone</label>
+      <input class="num-input" type="number" min="0" max="240" placeholder="mins" id="f003" onchange="save('f003',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#004</span><div class="feat-text"><span class="timing-tag t-morning">WITHIN 2 HRS</span><h3>Morning Sunlight</h3><p class="why">Triggers cortisol peak, sets melatonin timer 14 hrs later</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">Minutes of direct outdoor light (eyes open)</label>
+      <input class="num-input" type="number" min="0" max="120" placeholder="mins" id="f004" onchange="save('f004',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#005</span><div class="feat-text"><span class="timing-tag t-morning">WITHIN 2 HRS</span><h3>Sunlight Timing</h3><p class="why">Earlier = sharper cortisol peak = better energy and focus</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">Minutes after wake it happened</label>
+      <input class="num-input" type="number" min="0" max="240" placeholder="mins" id="f005" onchange="save('f005',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#006</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Morning Stiffness</h3><p class="why">Inflammation proxy; Bryan Johnson tracks this</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f006" oninput="sliderUpdate('f006')"><span class="slider-val" id="f006-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#007</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Morning Erection (M)</h3><p class="why">Testosterone and vascular health proxy</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f007','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f007','no',this)">NO</button>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#008</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>First Thought Tone</h3><p class="why">Default mode network tone indicator</p></div></div>
+    <div class="choice-row">
+      <button class="choice-btn" onclick="saveChoice('f008','Positive',this)">😊 Positive</button>
+      <button class="choice-btn" onclick="saveChoice('f008','Neutral',this)">😐 Neutral</button>
+      <button class="choice-btn" onclick="saveChoice('f008','Negative',this)">😔 Negative</button>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#009</span><div class="feat-text"><span class="timing-tag t-morning">WITHIN 2 HRS</span><h3>Gratitude Done</h3><p class="why">Primes prefrontal cortex, reduces amygdala reactivity</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f009','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f009','no',this)">NO</button>
+    </div>
+    <textarea class="text-input" rows="2" placeholder="3 things you're grateful for..." id="f009t" onchange="save('f009t',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#010</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Morning Mood Baseline</h3><p class="why">True baseline before caffeine or phone distort it</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f010" oninput="sliderUpdate('f010')"><span class="slider-val" id="f010-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#011</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Pre-Caffeine Energy</h3><p class="why">Reveals true sleep quality, not caffeine masking</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f011" oninput="sliderUpdate('f011')"><span class="slider-val" id="f011-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#012</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Morning Anxiety</h3><p class="why">Cortisol spike anxiety = sleep debt or inflammation</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="1" id="f012" oninput="sliderUpdate('f012')"><span class="slider-val" id="f012-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#013</span><div class="feat-text"><span class="timing-tag t-morning">WITHIN 2 HRS</span><h3>Cold Exposure</h3><p class="why">Norepinephrine +300% = dopamine elevation for 3-4 hrs</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f013','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f013','no',this)">NO</button>
+    </div>
+    <div class="input-wrap">
+      <label class="input-label">Duration (seconds)</label>
+      <input class="num-input" type="number" min="0" max="600" placeholder="secs" id="f013s" onchange="save('f013s',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#014</span><div class="feat-text"><span class="timing-tag t-morning">WITHIN 2 HRS</span><h3>Cold Exposure Intensity</h3><p class="why">Intensity correlates with norepinephrine response</p></div></div>
+    <div class="choice-row">
+      <button class="choice-btn" onclick="saveChoice('f014','Mild',this)">Mild</button>
+      <button class="choice-btn" onclick="saveChoice('f014','Moderate',this)">Moderate</button>
+      <button class="choice-btn" onclick="saveChoice('f014','Intense',this)">Intense</button>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#015</span><div class="feat-text"><span class="timing-tag t-morning">WITHIN 2 HRS</span><h3>Morning Hydration (before coffee)</h3><p class="why">Dehydration = #1 cause of morning brain fog</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">ml (1 glass ≈ 250ml)</label>
+      <input class="num-input" type="number" min="0" max="2000" placeholder="ml" id="f015" onchange="save('f015',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#016</span><div class="feat-text"><span class="timing-tag t-morning">WITHIN 2 HRS</span><h3>Morning Bowel Movement</h3><p class="why">Gut-brain axis; poor gut = poor focus day</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f016','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f016','no',this)">NO</button>
+    </div>
+    <div class="input-wrap">
+      <label class="input-label">Bristol Scale (1=hard lumps, 7=liquid)</label>
+      <div class="bristol-row" id="bristol016"></div>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#017</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Weight (post-toilet, pre-food)</h3><p class="why">Most accurate daily weight; Bryan Johnson standard</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">kg</label>
+      <input class="num-input" type="number" min="30" max="200" step="0.1" placeholder="kg" id="f017" onchange="save('f017',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#018</span><div class="feat-text"><span class="timing-tag t-morning">WITHIN 2 HRS</span><h3>Morning Exercise Done</h3><p class="why">BDNF release = neuroplasticity for rest of day</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f018','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f018','no',this)">NO</button>
+    </div>
+    <div class="choice-row" style="margin-top:4px">
+      <button class="choice-btn" onclick="saveChoice('f018t','Strength',this)">Strength</button>
+      <button class="choice-btn" onclick="saveChoice('f018t','Cardio',this)">Cardio</button>
+      <button class="choice-btn" onclick="saveChoice('f018t','Zone2',this)">Zone 2</button>
+      <button class="choice-btn" onclick="saveChoice('f018t','Flexibility',this)">Flexibility</button>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#019</span><div class="feat-text"><span class="timing-tag t-morning">WITHIN 2 HRS</span><h3>Workout Intensity (Morning RPE)</h3><p class="why">High RPE = high dopamine/endorphin burst</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f019" oninput="sliderUpdate('f019')"><span class="slider-val" id="f019-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#020</span><div class="feat-text"><span class="timing-tag t-morning">WITHIN 2 HRS</span><h3>Breakfast Eaten</h3><p class="why">Protein-first breakfast blunts glucose spike</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f020','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f020','no',this)">NO</button>
+    </div>
+    <div class="choice-row" style="margin-top:4px">
+      <button class="choice-btn" onclick="saveChoice('f020t','Protein-first',this)">Protein-first</button>
+      <button class="choice-btn" onclick="saveChoice('f020t','Carb-heavy',this)">Carb-heavy</button>
+      <button class="choice-btn" onclick="saveChoice('f020t','Fasted',this)">Fasted</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======= DOPAMINE ======= -->
+<div id="page-dopamine" class="section-page hidden">
+  <div class="section-header"><span class="sh-icon">⚡</span><div class="sh-info"><h2>Dopamine System Logs</h2><p>All day • Core reward system rewiring</p></div></div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#021</span><div class="feat-text"><span class="timing-tag t-allday">LOG INSTANTLY</span><h3>Dopamine Spike Event</h3><p class="why">Identify which sources dominate your reward circuit</p></div></div>
+    <div class="choice-row">
+      <button class="choice-btn" onclick="saveChoice('f021','Study',this)">Study</button>
+      <button class="choice-btn" onclick="saveChoice('f021','Social',this)">Social</button>
+      <button class="choice-btn" onclick="saveChoice('f021','Food',this)">Food</button>
+      <button class="choice-btn" onclick="saveChoice('f021','Porn',this)">Porn</button>
+      <button class="choice-btn" onclick="saveChoice('f021','Game',this)">Game</button>
+      <button class="choice-btn" onclick="saveChoice('f021','Scroll',this)">Scroll</button>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#022</span><div class="feat-text"><span class="timing-tag t-allday">LOG INSTANTLY</span><h3>Spike Intensity</h3><p class="why">Stronger spikes = deeper subsequent crash</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f022" oninput="sliderUpdate('f022')"><span class="slider-val" id="f022-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#023</span><div class="feat-text"><span class="timing-tag t-allday">LOG INSTANTLY</span><h3>Spike Duration</h3><p class="why">Short spikes = addictive pattern; long = healthier source</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">Minutes the high lasted</label>
+      <input class="num-input" type="number" min="0" max="300" placeholder="mins" id="f023" onchange="save('f023',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#024</span><div class="feat-text"><span class="timing-tag t-allday">LOG INSTANTLY</span><h3>Dopamine Crash</h3><p class="why">Crash depth reveals dopamine deficit after spike</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f024','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f024','no',this)">NO</button>
+    </div>
+    <div class="input-wrap" style="margin-top:6px"><label class="input-label">Depth 1-10</label><div class="slider-row"><input type="range" min="1" max="10" value="1" id="f024d" oninput="sliderUpdate('f024d')"><span class="slider-val" id="f024d-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#025</span><div class="feat-text"><span class="timing-tag t-allday">LOG INSTANTLY</span><h3>Crash Duration</h3><p class="why">Long crashes = receptor downregulation</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">Minutes</label>
+      <input class="num-input" type="number" min="0" max="600" placeholder="mins" id="f025" onchange="save('f025',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#026</span><div class="feat-text"><span class="timing-tag t-session">PER SESSION</span><h3>Study Session Enjoyment</h3><p class="why">Primary metric for learning dopamine rewire</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f026" oninput="sliderUpdate('f026')"><span class="slider-val" id="f026-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#027</span><div class="feat-text"><span class="timing-tag t-allday">LOG INSTANTLY</span><h3>Porn Viewed</h3><p class="why">Superstimulus that sets ceiling for natural reward — must track to reduce</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f027','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f027','no',this)">NO</button>
+    </div>
+    <div class="input-wrap" style="margin-top:6px">
+      <label class="input-label">Minutes</label>
+      <input class="num-input" type="number" min="0" max="300" placeholder="mins" id="f027m" onchange="save('f027m',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#028</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Social Media Scroll</h3><p class="why">Variable reward loop; directly competes with study dopamine</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">Minutes</label>
+      <input class="num-input" type="number" min="0" max="600" placeholder="mins" id="f028" onchange="save('f028',this.value)">
+    </div>
+    <div class="choice-row">
+      <button class="choice-btn" onclick="saveChoice('f028p','Instagram',this)">Instagram</button>
+      <button class="choice-btn" onclick="saveChoice('f028p','YouTube',this)">YouTube</button>
+      <button class="choice-btn" onclick="saveChoice('f028p','Twitter/X',this)">Twitter/X</button>
+      <button class="choice-btn" onclick="saveChoice('f028p','Reddit',this)">Reddit</button>
+      <button class="choice-btn" onclick="saveChoice('f028p','TikTok',this)">TikTok</button>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#029</span><div class="feat-text"><span class="timing-tag t-allday">END OF DAY</span><h3>Phone Pickups</h3><p class="why">Compulsive checking = low baseline dopamine</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">Count (from screen time settings)</label>
+      <input class="num-input" type="number" min="0" max="500" placeholder="count" id="f029" onchange="save('f029',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#030</span><div class="feat-text"><span class="timing-tag t-allday">LOG INSTANTLY</span><h3>Gaming Done</h3><p class="why">Variable reward; can compete or coexist with study dopamine</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f030','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f030','no',this)">NO</button>
+    </div>
+    <div class="input-wrap" style="margin-top:6px">
+      <label class="input-label">Minutes</label>
+      <input class="num-input" type="number" min="0" max="600" placeholder="mins" id="f030m" onchange="save('f030m',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#031</span><div class="feat-text"><span class="timing-tag t-allday">LOG INSTANTLY</span><h3>Binge Eating Event</h3><p class="why">Food dopamine spike; processed food hits same circuits as drugs</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f031','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f031','no',this)">NO</button>
+    </div>
+    <textarea class="text-input" rows="1" placeholder="Food type..." id="f031t" onchange="save('f031t',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#032</span><div class="feat-text"><span class="timing-tag t-session">AFTER SESSION</span><h3>Reward After Study (Used)</h3><p class="why">Conditioning study-reward pathway</p></div></div>
+    <textarea class="text-input" rows="2" placeholder="What reward + how long after..." id="f032" onchange="save('f032',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#033</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Dopamine Menu Item Used</h3><p class="why">Replace superstimuli with lower-spike sustainable sources</p></div></div>
+    <textarea class="text-input" rows="1" placeholder="Which healthy dopamine source..." id="f033" onchange="save('f033',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#034</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Abstinence Streak</h3><p class="why">Receptor sensitivity recovers ~2% per day of abstinence</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">Days since last porn/excessive scroll</label>
+      <input class="num-input" type="number" min="0" max="365" placeholder="days" id="f034" onchange="save('f034',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#035</span><div class="feat-text"><span class="timing-tag t-session">PRE-SESSION</span><h3>Motivation to Study (Pre-session)</h3><p class="why">Tracks dopamine baseline recovery over weeks</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f035" oninput="sliderUpdate('f035')"><span class="slider-val" id="f035-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#036</span><div class="feat-text"><span class="timing-tag t-session">POST-SESSION</span><h3>Motivation to Study (Post-session)</h3><p class="why">If higher than pre = dopamine system rewiring working</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f036" oninput="sliderUpdate('f036')"><span class="slider-val" id="f036-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#037</span><div class="feat-text"><span class="timing-tag t-session">DURING SESSION</span><h3>Intrinsic Curiosity Felt</h3><p class="why">Curiosity = dopamine precursor state; best predictor of retention</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f037" oninput="sliderUpdate('f037')"><span class="slider-val" id="f037-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#038</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Reward Anticipation Felt</h3><p class="why">Wanting to study = system is rewired successfully</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f038" oninput="sliderUpdate('f038')"><span class="slider-val" id="f038-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#039</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Novelty Craving</h3><p class="why">High = dopamine seeking mode; low = focused state</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f039" oninput="sliderUpdate('f039')"><span class="slider-val" id="f039-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#040</span><div class="feat-text"><span class="timing-tag t-allday">END OF DAY</span><h3>Dopamine Drain Source Today</h3><p class="why">Identify pattern over weeks</p></div></div>
+    <textarea class="text-input" rows="1" placeholder="Main culprit today..." id="f040" onchange="save('f040',this.value)"></textarea>
+  </div>
+</div>
+
+<!-- ======= BRAIN FOG ======= -->
+<div id="page-brainfog" class="section-page hidden">
+  <div class="section-header"><span class="sh-icon">🧠</span><div class="sh-info"><h2>Brain Fog & Cognitive Clarity</h2><p>All day (log 3x) • Zero brain fog tracking</p></div></div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#041</span><div class="feat-text"><span class="timing-tag t-allday">3X DAILY</span><h3>Brain Fog Severity</h3><p class="why">Identify time-of-day patterns</p></div></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div><label class="input-label">Morning</label><div class="slider-row"><input type="range" min="1" max="10" value="1" id="f041m" oninput="sliderUpdate('f041m')"><span class="slider-val" id="f041m-v">1</span></div></div>
+      <div><label class="input-label">Afternoon</label><div class="slider-row"><input type="range" min="1" max="10" value="1" id="f041a" oninput="sliderUpdate('f041a')"><span class="slider-val" id="f041a-v">1</span></div></div>
+      <div><label class="input-label">Evening</label><div class="slider-row"><input type="range" min="1" max="10" value="1" id="f041e" oninput="sliderUpdate('f041e')"><span class="slider-val" id="f041e-v">1</span></div></div>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#042</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Mental Clarity</h3><p class="why">Inverse of brain fog; positive frame</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f042" oninput="sliderUpdate('f042')"><span class="slider-val" id="f042-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#043</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Thought Speed</h3><p class="why">Subjective processing speed indicator</p></div></div>
+    <div class="choice-row">
+      <button class="choice-btn" onclick="saveChoice('f043','Slow',this)">🐢 Slow</button>
+      <button class="choice-btn" onclick="saveChoice('f043','Normal',this)">➡️ Normal</button>
+      <button class="choice-btn" onclick="saveChoice('f043','Sharp',this)">⚡ Sharp</button>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#044</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Word Retrieval Ease</h3><p class="why">Specific fog symptom; tracks inflammation and sleep debt</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="5" value="3" id="f044" oninput="sliderUpdate('f044')"><span class="slider-val" id="f044-v">3</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#045</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Reading Comprehension</h3><p class="why">Direct cognitive clarity test</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f045" oninput="sliderUpdate('f045')"><span class="slider-val" id="f045-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#046</span><div class="feat-text"><span class="timing-tag t-session">PER SESSION</span><h3>Focus Session Length</h3><p class="why">Prefrontal cortex endurance metric</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">Longest unbroken focus (minutes)</label>
+      <input class="num-input" type="number" min="0" max="300" placeholder="mins" id="f046" onchange="save('f046',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#047</span><div class="feat-text"><span class="timing-tag t-meal">POST-MEAL</span><h3>Post-Meal Fog</h3><p class="why">Glucose spike and gut-brain signal</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f047','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f047','no',this)">NO</button>
+    </div>
+    <div class="choice-row" style="margin-top:4px">
+      <button class="choice-btn" onclick="saveChoice('f047m','Breakfast',this)">Breakfast</button>
+      <button class="choice-btn" onclick="saveChoice('f047m','Lunch',this)">Lunch</button>
+      <button class="choice-btn" onclick="saveChoice('f047m','Dinner',this)">Dinner</button>
+    </div>
+    <div class="input-wrap"><label class="input-label">Severity 1-5</label><div class="slider-row"><input type="range" min="1" max="5" value="1" id="f047s" oninput="sliderUpdate('f047s')"><span class="slider-val" id="f047s-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#048</span><div class="feat-text"><span class="timing-tag t-meal">POST-MEAL</span><h3>Post-Meal Clarity Window</h3><p class="why">Guides meal timing for study blocks</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">Minutes until fog lifts after eating</label>
+      <input class="num-input" type="number" min="0" max="240" placeholder="mins" id="f048" onchange="save('f048',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#049</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Head Pressure / Heaviness</h3><p class="why">Sinus, hydration, or neuroinflammation signal</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="5" value="1" id="f049" oninput="sliderUpdate('f049')"><span class="slider-val" id="f049-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#050</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Eye Strain / Tired Eyes</h3><p class="why">Correlates with screen load and hydration</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="5" value="1" id="f050" oninput="sliderUpdate('f050')"><span class="slider-val" id="f050-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#051</span><div class="feat-text"><span class="timing-tag t-allday">AFTER CAFFEINE</span><h3>Caffeine Clarity Window</h3><p class="why">Reveals adenosine debt and metabolizer type</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">Hours of sharpness post-caffeine</label>
+      <input class="num-input" type="number" min="0" max="12" step="0.5" placeholder="hrs" id="f051" onchange="save('f051',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#052</span><div class="feat-text"><span class="timing-tag t-allday">AFTER CAFFEINE</span><h3>Caffeine Crash</h3><p class="why">Post-caffeine fog = adenosine rebound</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f052','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f052','no',this)">NO</button>
+    </div>
+    <div class="input-wrap" style="margin-top:4px"><label class="input-label">Severity 1-5</label><div class="slider-row"><input type="range" min="1" max="5" value="1" id="f052s" oninput="sliderUpdate('f052s')"><span class="slider-val" id="f052s-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#053</span><div class="feat-text"><span class="timing-tag t-allday">AFTER NAP</span><h3>Nap Clarity Boost</h3><p class="why">20-min nap = adenosine clearance</p></div></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="flex:1"><label class="input-label">Before nap</label><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f053b" oninput="sliderUpdate('f053b')"><span class="slider-val" id="f053b-v">5</span></div></div>
+      <div style="flex:1"><label class="input-label">After nap</label><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f053a" oninput="sliderUpdate('f053a')"><span class="slider-val" id="f053a-v">5</span></div></div>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#054</span><div class="feat-text"><span class="timing-tag t-session">DURING FOCUS</span><h3>Breathing Quality</h3><p class="why">CO2/O2 balance directly affects cognition</p></div></div>
+    <div class="choice-row">
+      <button class="choice-btn" onclick="saveChoice('f054','Shallow',this)">Shallow</button>
+      <button class="choice-btn" onclick="saveChoice('f054','Normal',this)">Normal</button>
+      <button class="choice-btn" onclick="saveChoice('f054','Deep',this)">Deep</button>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#055</span><div class="feat-text"><span class="timing-tag t-allday">DURING WORK</span><h3>Last Time Moved Body</h3><p class="why">Sitting &gt;2 hrs = 30% drop in cerebral blood flow</p></div></div>
+    <div class="input-wrap">
+      <label class="input-label">Hours ago</label>
+      <input class="num-input" type="number" min="0" max="12" step="0.5" placeholder="hrs" id="f055" onchange="save('f055',this.value)">
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#056</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Omega-3 / DHA Taken</h3><p class="why">Most evidence-backed brain fog supplement</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f056','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f056','no',this)">NO</button>
+    </div>
+    <input class="num-input" type="number" min="0" max="5000" placeholder="dose (mg)" style="margin-top:6px" id="f056d" onchange="save('f056d',this.value)">
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#057</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Magnesium Taken</h3><p class="why">Mg deficiency = brain fog, poor sleep, anxiety</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f057','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f057','no',this)">NO</button>
+    </div>
+    <div class="choice-row" style="margin-top:4px">
+      <button class="choice-btn" onclick="saveChoice('f057t','Glycinate',this)">Glycinate</button>
+      <button class="choice-btn" onclick="saveChoice('f057t','L-Threonate',this)">L-Threonate</button>
+      <button class="choice-btn" onclick="saveChoice('f057t','Oxide',this)">Oxide</button>
+    </div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#058</span><div class="feat-text"><span class="timing-tag t-evening">END OF DAY</span><h3>Overall Cognitive Peak Today</h3><p class="why">Tracks baseline improvement week over week</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f058" oninput="sliderUpdate('f058')"><span class="slider-val" id="f058-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#059</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Brain Fog Trigger Identified</h3><p class="why">Enables elimination diet approach</p></div></div>
+    <textarea class="text-input" rows="1" placeholder="Suspected cause..." id="f059" onchange="save('f059',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card">
+    <div class="feature-top"><span class="feat-num">#060</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Dry Mouth on Waking</h3><p class="why">Mouth breathing = poor sleep = fog; tape test</p></div></div>
+    <div class="yn-row">
+      <button class="yn-btn yes" onclick="saveYN('f060','yes',this)">YES</button>
+      <button class="yn-btn no" onclick="saveYN('f060','no',this)">NO</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======= SLEEP ======= -->
+<div id="page-sleep" class="section-page hidden">
+  <div class="section-header"><span class="sh-icon">🌙</span><div class="sh-info"><h2>Sleep Architecture</h2><p>Evening • Largest lever for dopamine & performance</p></div></div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#061</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Total Sleep Time</h3><p class="why">&lt;7 hrs = 40% cognitive impairment</p></div></div>
+    <div style="display:flex;gap:8px"><div style="flex:1"><label class="input-label">Hours</label><input class="num-input" type="number" min="0" max="14" placeholder="hrs" id="f061h" onchange="save('f061h',this.value)"></div><div style="flex:1"><label class="input-label">Minutes</label><input class="num-input" type="number" min="0" max="59" placeholder="min" id="f061m" onchange="save('f061m',this.value)"></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#062</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Bedtime</h3><p class="why">Before midnight = more slow-wave sleep</p></div></div>
+    <input class="time-input" type="time" id="f062" onchange="save('f062',this.value)">
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#063</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Sleep Onset Latency</h3><p class="why">&lt;20 min = healthy; &lt;5 min = sleep deprived</p></div></div>
+    <div class="input-wrap"><label class="input-label">Minutes to fall asleep</label><input class="num-input" type="number" min="0" max="120" placeholder="mins" id="f063" onchange="save('f063',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#064</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Wakeups Count</h3><p class="why">Fragmented sleep = no deep wave consolidation</p></div></div>
+    <div class="input-wrap"><label class="input-label">Times woken during night</label><input class="num-input" type="number" min="0" max="20" placeholder="count" id="f064" onchange="save('f064',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#065</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Wake Time</h3><p class="why">Anchor for circadian rhythm</p></div></div>
+    <input class="time-input" type="time" id="f065" onchange="save('f065',this.value)">
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#066</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Sleep Consistency</h3><p class="why">Most underrated sleep metric</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f066','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f066','no',this)">NO</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#067</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Last Meal Before Bed</h3><p class="why">&lt;3 hrs = impaired HGH release during sleep</p></div></div>
+    <div class="input-wrap"><label class="input-label">Hours gap before bed</label><input class="num-input" type="number" min="0" max="10" step="0.5" placeholder="hrs" id="f067" onchange="save('f067',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#068</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Alcohol Consumed</h3><p class="why">Kills REM sleep; worst brain fog next day</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f068','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f068','no',this)">NO</button></div>
+    <div style="display:flex;gap:8px;margin-top:4px"><div style="flex:1"><label class="input-label">Units</label><input class="num-input" type="number" min="0" max="20" placeholder="units" id="f068u" onchange="save('f068u',this.value)"></div><div style="flex:1"><label class="input-label">Hrs before bed</label><input class="num-input" type="number" min="0" max="12" step="0.5" placeholder="hrs" id="f068h" onchange="save('f068h',this.value)"></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#069</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Last Caffeine</h3><p class="why">Half-life 5-7 hrs; even decaf matters</p></div></div>
+    <div class="input-wrap"><label class="input-label">Hours before bed</label><input class="num-input" type="number" min="0" max="24" step="0.5" placeholder="hrs" id="f069" onchange="save('f069',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#070</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Blue Light Block</h3><p class="why">Melatonin suppression from screens</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f070','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f070','no',this)">NO</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#071</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Room Temperature</h3><p class="why">18-20°C optimal for deep sleep</p></div></div>
+    <div class="choice-row"><button class="choice-btn" onclick="saveChoice('f071','Cool',this)">❄️ Cool</button><button class="choice-btn" onclick="saveChoice('f071','Warm',this)">☀️ Warm</button><button class="choice-btn" onclick="saveChoice('f071','Hot',this)">🔥 Hot</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#072</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Pre-Sleep Anxiety</h3><p class="why">Cortisol at night = delayed sleep onset</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="1" id="f072" oninput="sliderUpdate('f072')"><span class="slider-val" id="f072-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#073</span><div class="feat-text"><span class="timing-tag t-evening">PRE-SLEEP</span><h3>Pre-Sleep Phone Use</h3><p class="why">Each minute delays sleep and reduces depth</p></div></div>
+    <div class="input-wrap"><label class="input-label">Minutes in bed on phone</label><input class="num-input" type="number" min="0" max="180" placeholder="mins" id="f073" onchange="save('f073',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#074</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Dreaming (Recalled)</h3><p class="why">REM marker; emotional processing</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f074','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f074','no',this)">NO</button></div>
+    <div class="choice-row" style="margin-top:4px"><button class="choice-btn" onclick="saveChoice('f074t','Positive',this)">Positive</button><button class="choice-btn" onclick="saveChoice('f074t','Neutral',this)">Neutral</button><button class="choice-btn" onclick="saveChoice('f074t','Negative',this)">Negative</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#075</span><div class="feat-text"><span class="timing-tag t-morning">ON WAKING</span><h3>Morning Freshness Score</h3><p class="why">Best single-number sleep quality proxy</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f075" oninput="sliderUpdate('f075')"><span class="slider-val" id="f075-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#076</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Sleep Debt Accumulation</h3><p class="why">Debt is cumulative; tracks recovery need</p></div></div>
+    <div class="input-wrap"><label class="input-label">Estimated hrs below 8 this week</label><input class="num-input" type="number" min="0" max="30" step="0.5" placeholder="hrs" id="f076" onchange="save('f076',this.value)"></div>
+  </div>
+</div>
+
+<!-- ======= FITNESS ======= -->
+<div id="page-fitness" class="section-page hidden">
+  <div class="section-header"><span class="sh-icon">💪</span><div class="sh-info"><h2>Fitness & Physical Performance</h2><p>Workout • Bryan Johnson-level measurement</p></div></div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#077</span><div class="feat-text"><span class="timing-tag t-allday">WORKOUT</span><h3>Workout Done</h3><p class="why">Consistency &gt; intensity</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f077','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f077','no',this)">NO</button></div>
+    <div class="choice-row" style="margin-top:4px"><button class="choice-btn" onclick="saveChoice('f077t','Strength',this)">Strength</button><button class="choice-btn" onclick="saveChoice('f077t','Cardio',this)">Cardio</button><button class="choice-btn" onclick="saveChoice('f077t','Zone2',this)">Zone 2</button><button class="choice-btn" onclick="saveChoice('f077t','Flexibility',this)">Flexibility</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#078</span><div class="feat-text"><span class="timing-tag t-allday">WORKOUT</span><h3>Workout Duration</h3><p class="why">Volume tracking</p></div></div>
+    <div class="input-wrap"><label class="input-label">Minutes</label><input class="num-input" type="number" min="0" max="300" placeholder="mins" id="f078" onchange="save('f078',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#079</span><div class="feat-text"><span class="timing-tag t-allday">WORKOUT</span><h3>Workout Intensity (RPE)</h3><p class="why">Perceived exertion = best daily load indicator</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f079" oninput="sliderUpdate('f079')"><span class="slider-val" id="f079-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#080</span><div class="feat-text"><span class="timing-tag t-allday">WORKOUT</span><h3>Zone 2 Cardio Done</h3><p class="why">Bryan Johnson does 1 hr Zone 2/day; mitochondrial density</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f080','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f080','no',this)">NO</button></div>
+    <div class="input-wrap" style="margin-top:4px"><label class="input-label">Minutes</label><input class="num-input" type="number" min="0" max="180" placeholder="mins" id="f080m" onchange="save('f080m',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#081</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Steps Today</h3><p class="why">NEAT: non-exercise activity thermogenesis</p></div></div>
+    <div class="input-wrap"><label class="input-label">Count (from phone)</label><input class="num-input" type="number" min="0" max="50000" placeholder="steps" id="f081" onchange="save('f081',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#082</span><div class="feat-text"><span class="timing-tag t-allday">WORKOUT</span><h3>Strength Progression</h3><p class="why">Progressive overload tracking</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f082','yes',this)">YES (PR)</button><button class="yn-btn no" onclick="saveYN('f082','no',this)">NO</button></div>
+    <textarea class="text-input" rows="1" placeholder="Which exercise..." id="f082e" onchange="save('f082e',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#083</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Muscle Soreness</h3><p class="why">Recovery and overtraining signal</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="1" id="f083" oninput="sliderUpdate('f083')"><span class="slider-val" id="f083-v">1</span></div></div>
+    <textarea class="text-input" rows="1" placeholder="Which muscle..." id="f083m" onchange="save('f083m',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#084</span><div class="feat-text"><span class="timing-tag t-allday">30 MIN POST-WORKOUT</span><h3>Post-Workout Energy</h3><p class="why">High = good hormonal response; crash = overtraining</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f084" oninput="sliderUpdate('f084')"><span class="slider-val" id="f084-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#085</span><div class="feat-text"><span class="timing-tag t-allday">PRE-WORKOUT</span><h3>Workout Willingness</h3><p class="why">Motivational variability; correlates with testosterone and sleep</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f085" oninput="sliderUpdate('f085')"><span class="slider-val" id="f085-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#086</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Flexibility Test</h3><p class="why">Bryan Johnson benchmarks this daily</p></div></div>
+    <div class="choice-row"><button class="choice-btn" onclick="saveChoice('f086','Touch toes',this)">Touch Toes ✅</button><button class="choice-btn" onclick="saveChoice('f086','Fingers to ankle',this)">Fingers to Ankle</button><button class="choice-btn" onclick="saveChoice('f086','Can\'t reach',this)">Can't Reach</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#087</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Balance Test</h3><p class="why">Neurological and proprioception health</p></div></div>
+    <div class="input-wrap"><label class="input-label">Single-leg stand (eyes closed) — seconds</label><input class="num-input" type="number" min="0" max="120" placeholder="secs" id="f087" onchange="save('f087',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#088</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Grip Strength Feel</h3><p class="why">Grip correlates with all-cause mortality</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f088" oninput="sliderUpdate('f088')"><span class="slider-val" id="f088-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#089</span><div class="feat-text"><span class="timing-tag t-allday">WORKOUT</span><h3>Outdoor Workout</h3><p class="why">Adds sunlight + nature exposure simultaneously</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f089','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f089','no',this)">NO</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#090</span><div class="feat-text"><span class="timing-tag t-allday">WORKOUT</span><h3>Recovery Modality Used</h3><p class="why">Active recovery speeds muscle repair</p></div></div>
+    <div class="choice-row"><button class="choice-btn" onclick="saveChoice('f090','Stretching',this)">Stretching</button><button class="choice-btn" onclick="saveChoice('f090','Massage',this)">Massage</button><button class="choice-btn" onclick="saveChoice('f090','Foam Roll',this)">Foam Roll</button><button class="choice-btn" onclick="saveChoice('f090','Sauna',this)">Sauna</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#091</span><div class="feat-text"><span class="timing-tag t-allday">MONTHLY</span><h3>VO2 Max Proxy</h3><p class="why">Best fitness longevity predictor (Cooper 12-min test)</p></div></div>
+    <div class="input-wrap"><label class="input-label">Cooper test — 12-min run distance (meters)</label><input class="num-input" type="number" min="0" max="5000" placeholder="meters" id="f091" onchange="save('f091',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#092</span><div class="feat-text"><span class="timing-tag t-allday">WEEKLY</span><h3>Push-Up Count Max</h3><p class="why">Upper body strength proxy; Harvard longevity metric</p></div></div>
+    <div class="input-wrap"><label class="input-label">Max reps</label><input class="num-input" type="number" min="0" max="300" placeholder="count" id="f092" onchange="save('f092',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#093</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Resting Pulse Rate</h3><p class="why">Fitness level proxy; Bryan tracks this daily</p></div></div>
+    <div class="input-wrap"><label class="input-label">Manual 60-second count (BPM)</label><input class="num-input" type="number" min="30" max="200" placeholder="bpm" id="f093" onchange="save('f093',this.value)"></div>
+  </div>
+</div>
+
+<!-- ======= NUTRITION ======= -->
+<div id="page-nutrition" class="section-page hidden">
+  <div class="section-header"><span class="sh-icon">🥗</span><div class="sh-info"><h2>Nutrition & Glucose Management</h2><p>Per meal • #1 controllable cause of brain fog</p></div></div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#094</span><div class="feat-text"><span class="timing-tag t-meal">PER MEAL</span><h3>Meal Time</h3><p class="why">Time-restricted eating window</p></div></div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div><label class="input-label">Meal 1</label><input class="time-input" type="time" id="f094a" onchange="save('f094a',this.value)"></div>
+      <div><label class="input-label">Meal 2</label><input class="time-input" type="time" id="f094b" onchange="save('f094b',this.value)"></div>
+      <div><label class="input-label">Meal 3</label><input class="time-input" type="time" id="f094c" onchange="save('f094c',this.value)"></div>
+    </div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#095</span><div class="feat-text"><span class="timing-tag t-meal">PER MEAL</span><h3>Eating Window</h3><p class="why">Bryan Johnson eats in a 6-8 hr window</p></div></div>
+    <div class="input-wrap"><label class="input-label">First meal to last meal (hours)</label><input class="num-input" type="number" min="0" max="24" step="0.5" placeholder="hrs" id="f095" onchange="save('f095',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#096</span><div class="feat-text"><span class="timing-tag t-meal">PER MEAL</span><h3>Meal Composition</h3><p class="why">Identifies spike triggers</p></div></div>
+    <div class="choice-row"><button class="choice-btn" onclick="saveChoice('f096','Protein',this)">🥩 Protein</button><button class="choice-btn" onclick="saveChoice('f096','Fat',this)">🥑 Fat</button><button class="choice-btn" onclick="saveChoice('f096','Carb',this)">🍚 Carb</button><button class="choice-btn" onclick="saveChoice('f096','Mixed',this)">Mixed</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#097</span><div class="feat-text"><span class="timing-tag t-meal">PER MEAL</span><h3>Vegetables First</h3><p class="why">Reduces glucose spike 36%; Glucose Goddess protocol</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f097','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f097','no',this)">NO</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#098</span><div class="feat-text"><span class="timing-tag t-meal">30 MIN POST-MEAL</span><h3>Post-Meal Energy</h3><p class="why">Energy = proxy for glucose stability</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f098" oninput="sliderUpdate('f098')"><span class="slider-val" id="f098-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#099</span><div class="feat-text"><span class="timing-tag t-meal">30 MIN POST-MEAL</span><h3>Post-Meal Crash</h3><p class="why">Direct glucose spike aftermath</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f099','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f099','no',this)">NO</button></div>
+    <div class="input-wrap" style="margin-top:4px"><label class="input-label">Depth 1-5</label><div class="slider-row"><input type="range" min="1" max="5" value="1" id="f099d" oninput="sliderUpdate('f099d')"><span class="slider-val" id="f099d-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#100</span><div class="feat-text"><span class="timing-tag t-meal">30 MIN POST-MEAL</span><h3>Post-Meal Brain Fog</h3><p class="why">Insulin surge effect on cognition</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f100','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f100','no',this)">NO</button></div>
+    <div class="input-wrap" style="margin-top:4px"><label class="input-label">Minutes it lasted</label><input class="num-input" type="number" min="0" max="180" placeholder="mins" id="f100m" onchange="save('f100m',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#101</span><div class="feat-text"><span class="timing-tag t-meal">30 MIN POST-MEAL</span><h3>Post-Meal Mood</h3><p class="why">Blood sugar mood connection</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f101" oninput="sliderUpdate('f101')"><span class="slider-val" id="f101-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#102</span><div class="feat-text"><span class="timing-tag t-meal">PRE-MEAL</span><h3>Hunger Level Pre-Meal</h3><p class="why">Eating when not hungry = habit not need</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f102" oninput="sliderUpdate('f102')"><span class="slider-val" id="f102-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#103</span><div class="feat-text"><span class="timing-tag t-meal">POST-MEAL</span><h3>Meal Satiety</h3><p class="why">Satiety = leptin response health</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f103" oninput="sliderUpdate('f103')"><span class="slider-val" id="f103-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#104</span><div class="feat-text"><span class="timing-tag t-meal">PER MEAL</span><h3>Protein Intake</h3><p class="why">Bryan eats high protein; essential for dopamine synthesis</p></div></div>
+    <div class="choice-row"><button class="choice-btn" onclick="saveChoice('f104','High',this)">High (&gt;0.8g/lb)</button><button class="choice-btn" onclick="saveChoice('f104','Medium',this)">Medium</button><button class="choice-btn" onclick="saveChoice('f104','Low',this)">Low</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#105</span><div class="feat-text"><span class="timing-tag t-meal">PER MEAL</span><h3>Junk Food Consumed</h3><p class="why">Ultra-processed food = dopamine spike + crash + inflammation</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f105','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f105','no',this)">NO</button></div>
+    <textarea class="text-input" rows="1" placeholder="Item..." id="f105i" onchange="save('f105i',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#106</span><div class="feat-text"><span class="timing-tag t-meal">PER MEAL</span><h3>Sugar Intake</h3><p class="why">Sugar is most common brain fog trigger</p></div></div>
+    <div class="choice-row"><button class="choice-btn" onclick="saveChoice('f106','High',this)">🍭 High</button><button class="choice-btn" onclick="saveChoice('f106','Medium',this)">Medium</button><button class="choice-btn" onclick="saveChoice('f106','Low',this)">Low</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#107</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Water Intake</h3><p class="why">2% dehydration = 20% cognitive decline</p></div></div>
+    <div class="input-wrap"><label class="input-label">Total ml (1 glass ≈ 250ml)</label><input class="num-input" type="number" min="0" max="6000" placeholder="ml" id="f107" onchange="save('f107',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#108</span><div class="feat-text"><span class="timing-tag t-session">PRE-STUDY</span><h3>Pre-Workout/Study Nutrition</h3><p class="why">Stable glucose during study = no mid-session crash</p></div></div>
+    <textarea class="text-input" rows="2" placeholder="What you ate + how long before..." id="f108" onchange="save('f108',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#109</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Intermittent Fasting Followed</h3><p class="why">Fasted state = ketones = clearest cognition</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f109','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f109','no',this)">NO</button></div>
+    <textarea class="text-input" rows="1" placeholder="Window (e.g. 16:8, 18:6)..." id="f109w" onchange="save('f109w',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#110</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Supplement Stack</h3><p class="why">Bryan takes 100+ supplements daily; stack consistency matters</p></div></div>
+    <textarea class="text-input" rows="3" placeholder="List each supplement + time taken..." id="f110" onchange="save('f110',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#111</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Creatine Taken</h3><p class="why">Most evidence-backed cognitive and strength supplement</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f111','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f111','no',this)">NO</button></div>
+    <input class="num-input" type="number" min="0" max="20" step="0.5" placeholder="dose (g)" style="margin-top:6px" id="f111d" onchange="save('f111d',this.value)">
+  </div>
+</div>
+
+<!-- ======= FOCUS ======= -->
+<div id="page-focus" class="section-page hidden">
+  <div class="section-header"><span class="sh-icon">📚</span><div class="sh-info"><h2>Focus & Study Sessions</h2><p>Per session • Direct output metric of dopamine rewire</p></div></div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#112</span><div class="feat-text"><span class="timing-tag t-session">START</span><h3>Study Session Started</h3><p class="why">Identifies your peak cognitive window</p></div></div>
+    <input class="time-input" type="time" id="f112" onchange="save('f112',this.value)">
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#113</span><div class="feat-text"><span class="timing-tag t-session">END</span><h3>Study Session Duration</h3><p class="why">Total focus time per day; target 4-6 deep hours</p></div></div>
+    <div class="input-wrap"><label class="input-label">Minutes of actual focus</label><input class="num-input" type="number" min="0" max="480" placeholder="mins" id="f113" onchange="save('f113',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#114</span><div class="feat-text"><span class="timing-tag t-session">START</span><h3>Study Subject / Topic</h3><p class="why">Topic-dopamine correlation over time</p></div></div>
+    <textarea class="text-input" rows="1" placeholder="What you studied..." id="f114" onchange="save('f114',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#115</span><div class="feat-text"><span class="timing-tag t-session">PRE-SESSION</span><h3>Pre-Session Motivation</h3><p class="why">Baseline before session starts</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f115" oninput="sliderUpdate('f115')"><span class="slider-val" id="f115-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#116</span><div class="feat-text"><span class="timing-tag t-session">MID-SESSION</span><h3>Session Enjoyment</h3><p class="why">Core metric of dopamine rewire progress</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f116" oninput="sliderUpdate('f116')"><span class="slider-val" id="f116-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#117</span><div class="feat-text"><span class="timing-tag t-session">DURING SESSION</span><h3>Flow State Achieved</h3><p class="why">Flow = peak dopamine + norepinephrine state</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f117','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f117','no',this)">NO</button></div>
+    <div class="input-wrap" style="margin-top:4px"><label class="input-label">Minutes in flow</label><input class="num-input" type="number" min="0" max="300" placeholder="mins" id="f117m" onchange="save('f117m',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#118</span><div class="feat-text"><span class="timing-tag t-session">DURING SESSION</span><h3>Distractions Count</h3><p class="why">Attention metric; should decrease week over week</p></div></div>
+    <div class="input-wrap"><label class="input-label">Times you checked phone / switched task</label><input class="num-input" type="number" min="0" max="100" placeholder="count" id="f118" onchange="save('f118',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#119</span><div class="feat-text"><span class="timing-tag t-session">PER SESSION</span><h3>Pomodoro Blocks Completed</h3><p class="why">Structured focus with built-in reward breaks</p></div></div>
+    <div class="input-wrap"><label class="input-label">Count of 25-min blocks</label><input class="num-input" type="number" min="0" max="20" placeholder="count" id="f119" onchange="save('f119',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#120</span><div class="feat-text"><span class="timing-tag t-session">PRE-SESSION</span><h3>Environment Quality</h3><p class="why">Environment directly impacts focus ceiling</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="5" value="3" id="f120" oninput="sliderUpdate('f120')"><span class="slider-val" id="f120-v">3</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#121</span><div class="feat-text"><span class="timing-tag t-session">PRE-SESSION</span><h3>Background Noise Type</h3><p class="why">Identifies your optimal focus environment</p></div></div>
+    <div class="choice-row"><button class="choice-btn" onclick="saveChoice('f121','Silent',this)">🔇 Silent</button><button class="choice-btn" onclick="saveChoice('f121','Lo-fi',this)">🎵 Lo-fi</button><button class="choice-btn" onclick="saveChoice('f121','White Noise',this)">🌊 White</button><button class="choice-btn" onclick="saveChoice('f121','Ambient',this)">🌿 Ambient</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#122</span><div class="feat-text"><span class="timing-tag t-session">POST-SESSION</span><h3>Post-Session Satisfaction</h3><p class="why">Satisfaction = dopamine reward consolidation</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f122" oninput="sliderUpdate('f122')"><span class="slider-val" id="f122-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#123</span><div class="feat-text"><span class="timing-tag t-session">POST-SESSION</span><h3>Retention Feel</h3><p class="why">Sleep + hydration + focus depth all show here</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f123" oninput="sliderUpdate('f123')"><span class="slider-val" id="f123-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#124</span><div class="feat-text"><span class="timing-tag t-session">PER SESSION</span><h3>Active Recall Used</h3><p class="why">Active recall = forced dopamine-curiosity engagement</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f124','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f124','no',this)">NO</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#125</span><div class="feat-text"><span class="timing-tag t-session">PER SESSION</span><h3>Difficulty Level of Material</h3><p class="why">Optimal difficulty = flow zone; too easy/hard = no dopamine</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="5" value="3" id="f125" oninput="sliderUpdate('f125')"><span class="slider-val" id="f125-v">3</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#126</span><div class="feat-text"><span class="timing-tag t-session">PER SESSION</span><h3>Study-to-Reward Ratio</h3><p class="why">Gradually lengthening this = dopamine tolerance training</p></div></div>
+    <div class="input-wrap"><label class="input-label">Minutes studied before a break reward</label><input class="num-input" type="number" min="0" max="300" placeholder="mins" id="f126" onchange="save('f126',this.value)"></div>
+  </div>
+</div>
+
+<!-- ======= HORMONAL ======= -->
+<div id="page-hormonal" class="section-page hidden">
+  <div class="section-header"><span class="sh-icon">🔬</span><div class="sh-info"><h2>Hormonal & Neurochemical Proxies</h2><p>Morning • No lab needed — subjective proxies</p></div></div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#127</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Drive and Dominance Feel</h3><p class="why">Testosterone proxy; peaks in morning</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f127" oninput="sliderUpdate('f127')"><span class="slider-val" id="f127-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#128</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Cortisol Feel (Morning)</h3><p class="why">Healthy cortisol peak = energy; too high = anxiety</p></div></div>
+    <div class="input-wrap"><label class="input-label">Wired feeling within 30 min of wake</label><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f128" oninput="sliderUpdate('f128')"><span class="slider-val" id="f128-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#129</span><div class="feat-text"><span class="timing-tag t-allday">AFTERNOON</span><h3>Afternoon Energy Dip</h3><p class="why">Natural cortisol drop; size reveals sleep debt</p></div></div>
+    <div class="input-wrap"><label class="input-label">Severity 2-4pm (1-5)</label><div class="slider-row"><input type="range" min="1" max="5" value="2" id="f129" oninput="sliderUpdate('f129')"><span class="slider-val" id="f129-v">2</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#130</span><div class="feat-text"><span class="timing-tag t-allday">AFTERNOON</span><h3>Serotonin Proxy</h3><p class="why">Serotonin peaks afternoon; low = impulsivity, cravings</p></div></div>
+    <div class="input-wrap"><label class="input-label">Contentment/calm 1-10</label><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f130" oninput="sliderUpdate('f130')"><span class="slider-val" id="f130-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#131</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Oxytocin Proxy</h3><p class="why">Physical touch, eye contact, real connection</p></div></div>
+    <div class="input-wrap"><label class="input-label">Warmth/connection 1-10</label><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f131" oninput="sliderUpdate('f131')"><span class="slider-val" id="f131-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#132</span><div class="feat-text"><span class="timing-tag t-allday">LOG INSTANTLY</span><h3>Adrenaline Events</h3><p class="why">Cumulative adrenaline = cortisol dysregulation</p></div></div>
+    <textarea class="text-input" rows="1" placeholder="Stressful event..." id="f132" onchange="save('f132',this.value)"></textarea>
+    <div class="input-wrap"><label class="input-label">Spike 1-5</label><div class="slider-row"><input type="range" min="1" max="5" value="1" id="f132s" oninput="sliderUpdate('f132s')"><span class="slider-val" id="f132s-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#133</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Libido Level</h3><p class="why">Strong libido = healthy testosterone/dopamine baseline</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f133" oninput="sliderUpdate('f133')"><span class="slider-val" id="f133-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#134</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Risk Appetite</h3><p class="why">Testosterone-driven; high risk appetite = good T levels</p></div></div>
+    <div class="input-wrap"><label class="input-label">Desire to challenge yourself 1-10</label><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f134" oninput="sliderUpdate('f134')"><span class="slider-val" id="f134-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#135</span><div class="feat-text"><span class="timing-tag t-allday">3 PM</span><h3>Afternoon Mood</h3><p class="why">Reveals cortisol stability vs crash</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f135" oninput="sliderUpdate('f135')"><span class="slider-val" id="f135-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#136</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Evening Wind-Down Ease</h3><p class="why">High cortisol at night = testosterone suppressor</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f136" oninput="sliderUpdate('f136')"><span class="slider-val" id="f136-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#137</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Hair / Skin Oiliness Change</h3><p class="why">Androgen activity proxy</p></div></div>
+    <div class="choice-row"><button class="choice-btn" onclick="saveChoice('f137','Unusually oily',this)">Unusually oily</button><button class="choice-btn" onclick="saveChoice('f137','Normal',this)">Normal</button><button class="choice-btn" onclick="saveChoice('f137','Unusually dry',this)">Unusually dry</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#138</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Acne Flare</h3><p class="why">Hormonal disruption signal</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f138','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f138','no',this)">NO</button></div>
+    <textarea class="text-input" rows="1" placeholder="Location..." id="f138l" onchange="save('f138l',this.value)"></textarea>
+  </div>
+</div>
+
+<!-- ======= GUT ======= -->
+<div id="page-gut" class="section-page hidden">
+  <div class="section-header"><span class="sh-icon">🫀</span><div class="sh-info"><h2>Gut, Inflammation & Recovery</h2><p>Morning • Hidden roots of brain fog</p></div></div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#139</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Bowel Movement</h3><p class="why">Bryan Johnson logs this daily; gut transit = health proxy</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f139','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f139','no',this)">NO</button></div>
+    <div class="input-wrap" style="margin-top:6px"><label class="input-label">Bristol Scale (1=hard lumps, 4=ideal, 7=liquid)</label><div class="bristol-row" id="bristol139"></div></div>
+    <div class="choice-row" style="margin-top:4px"><button class="choice-btn" onclick="saveChoice('f139t','Morning',this)">Morning</button><button class="choice-btn" onclick="saveChoice('f139t','Afternoon',this)">Afternoon</button><button class="choice-btn" onclick="saveChoice('f139t','Evening',this)">Evening</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#140</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Bloating Level</h3><p class="why">Gut inflammation signal; correlates with brain fog</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="1" id="f140" oninput="sliderUpdate('f140')"><span class="slider-val" id="f140-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#141</span><div class="feat-text"><span class="timing-tag t-meal">POST-MEAL</span><h3>Digestive Comfort</h3><p class="why">Poor digestion = endotoxin leak = brain fog</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f141" oninput="sliderUpdate('f141')"><span class="slider-val" id="f141-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#142</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Gut-Brain Mood Match</h3><p class="why">Gut-brain axis awareness</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f142','yes',this)">Match ✓</button><button class="yn-btn no" onclick="saveYN('f142','no',this)">Mismatch ✗</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#143</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Systemic Inflammation Proxy</h3><p class="why">Neuroinflammation = #1 root of brain fog</p></div></div>
+    <div class="input-wrap"><label class="input-label">Joint aches/skin inflammation/sluggishness 1-5</label><div class="slider-row"><input type="range" min="1" max="5" value="1" id="f143" oninput="sliderUpdate('f143')"><span class="slider-val" id="f143-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#144</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Body Pain / Aches</h3><p class="why">Inflammation and recovery status</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="1" id="f144" oninput="sliderUpdate('f144')"><span class="slider-val" id="f144-v">1</span></div></div>
+    <textarea class="text-input" rows="1" placeholder="Location..." id="f144l" onchange="save('f144l',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#145</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Urine Color</h3><p class="why">Hydration and kidney function proxy</p></div></div>
+    <div class="input-wrap"><label class="input-label">1 = pale straw (ideal), 8 = brown (dehydrated)</label><div class="slider-row"><input type="range" min="1" max="8" value="3" id="f145" oninput="sliderUpdate('f145')"><span class="slider-val" id="f145-v">3</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#146</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Mucus / Congestion</h3><p class="why">Sinus congestion = reduced brain oxygenation</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f146','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f146','no',this)">NO</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#147</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Skin Clarity</h3><p class="why">Skin = inflammation mirror; gut dysbiosis shows on skin</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="5" value="3" id="f147" oninput="sliderUpdate('f147')"><span class="slider-val" id="f147-v">3</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#148</span><div class="feat-text"><span class="timing-tag t-meal">PER MEAL</span><h3>Fermented Food Intake</h3><p class="why">Microbiome diversity = brain function</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f148','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f148','no',this)">NO</button></div>
+    <div class="choice-row" style="margin-top:4px"><button class="choice-btn" onclick="saveChoice('f148t','Yogurt',this)">Yogurt</button><button class="choice-btn" onclick="saveChoice('f148t','Kimchi',this)">Kimchi</button><button class="choice-btn" onclick="saveChoice('f148t','Kefir',this)">Kefir</button><button class="choice-btn" onclick="saveChoice('f148t','Other',this)">Other</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#149</span><div class="feat-text"><span class="timing-tag t-meal">PER MEAL</span><h3>Fiber Intake</h3><p class="why">Butyrate from fiber = tight gut barrier = no brain fog</p></div></div>
+    <div class="choice-row"><button class="choice-btn" onclick="saveChoice('f149','High',this)">🥦 High</button><button class="choice-btn" onclick="saveChoice('f149','Medium',this)">Medium</button><button class="choice-btn" onclick="saveChoice('f149','Low',this)">Low</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#150</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Recovery Feel (Overall)</h3><p class="why">Composite: sleep + gut + inflammation + soreness</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f150" oninput="sliderUpdate('f150')"><span class="slider-val" id="f150-v">5</span></div></div>
+  </div>
+</div>
+
+<!-- ======= MENTAL ======= -->
+<div id="page-mental" class="section-page hidden">
+  <div class="section-header"><span class="sh-icon">💭</span><div class="sh-info"><h2>Mental & Emotional State</h2><p>2x daily • Emotional state drives dopamine decisions</p></div></div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#151</span><div class="feat-text"><span class="timing-tag t-allday">2X DAILY</span><h3>Overall Wellbeing</h3><p class="why">Master metric; tracks trajectory week over week</p></div></div>
+    <div style="display:flex;gap:8px"><div style="flex:1"><label class="input-label">Morning</label><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f151m" oninput="sliderUpdate('f151m')"><span class="slider-val" id="f151m-v">5</span></div></div><div style="flex:1"><label class="input-label">Evening</label><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f151e" oninput="sliderUpdate('f151e')"><span class="slider-val" id="f151e-v">5</span></div></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#152</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Stress Level</h3><p class="why">Cortisol elevation = dopamine suppression</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f152" oninput="sliderUpdate('f152')"><span class="slider-val" id="f152-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#153</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Boredom Level</h3><p class="why">Boredom = #1 trigger for superstimulus seeking</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="1" id="f153" oninput="sliderUpdate('f153')"><span class="slider-val" id="f153-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#154</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Loneliness</h3><p class="why">Loneliness = dopamine-seeking state; addictive behavior predictor</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="1" id="f154" oninput="sliderUpdate('f154')"><span class="slider-val" id="f154-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#155</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Self-Discipline Feel</h3><p class="why">Tracks prefrontal cortex strength over time</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f155" oninput="sliderUpdate('f155')"><span class="slider-val" id="f155-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#156</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Ego Depletion</h3><p class="why">Decision fatigue; high = vulnerability to dopamine traps</p></div></div>
+    <div class="input-wrap"><label class="input-label">Willpower tank empty? 1-10</label><div class="slider-row"><input type="range" min="1" max="10" value="1" id="f156" oninput="sliderUpdate('f156')"><span class="slider-val" id="f156-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#157</span><div class="feat-text"><span class="timing-tag t-allday">LOG INSTANTLY</span><h3>Emotional Eating Urge</h3><p class="why">Emotional eating = dopamine-seeking with food</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f157','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f157','no',this)">NO</button></div>
+    <textarea class="text-input" rows="1" placeholder="Triggered by what..." id="f157t" onchange="save('f157t',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#158</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Mindfulness Session</h3><p class="why">10 min/day = measurable prefrontal cortex growth in 8 weeks</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f158','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f158','no',this)">NO</button></div>
+    <div class="input-wrap" style="margin-top:4px"><label class="input-label">Minutes</label><input class="num-input" type="number" min="0" max="120" placeholder="mins" id="f158m" onchange="save('f158m',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#159</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Journaling Done</h3><p class="why">Reduces amygdala reactivity; improves emotional clarity</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f159','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f159','no',this)">NO</button></div>
+    <div class="choice-row" style="margin-top:4px"><button class="choice-btn" onclick="saveChoice('f159t','Gratitude',this)">Gratitude</button><button class="choice-btn" onclick="saveChoice('f159t','Reflection',this)">Reflection</button><button class="choice-btn" onclick="saveChoice('f159t','Free',this)">Free</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#160</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Deep Conversation Quality</h3><p class="why">Real connection = serotonin + oxytocin; replaces shallow dopamine</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="5" value="1" id="f160" oninput="sliderUpdate('f160')"><span class="slider-val" id="f160-v">1</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#161</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Sense of Purpose</h3><p class="why">Purpose = sustained dopamine without spikes; the end goal</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f161" oninput="sliderUpdate('f161')"><span class="slider-val" id="f161-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#162</span><div class="feat-text"><span class="timing-tag t-allday">3 PM</span><h3>Afternoon Emotional Check-In</h3><p class="why">Midday low = serotonin / glucose dip</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f162" oninput="sliderUpdate('f162')"><span class="slider-val" id="f162-v">5</span></div></div>
+  </div>
+</div>
+
+<!-- ======= ENVIRON ======= -->
+<div id="page-environ" class="section-page hidden">
+  <div class="section-header"><span class="sh-icon">🌿</span><div class="sh-info"><h2>Environment & Circadian Optimization</h2><p>Evening • Invisible programmers of your biology</p></div></div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#163</span><div class="feat-text"><span class="timing-tag t-morning">MORNING</span><h3>Morning Sunlight (Outdoor)</h3><p class="why">Sets cortisol peak, melatonin timer, vitamin D</p></div></div>
+    <div style="display:flex;gap:8px"><div style="flex:1"><label class="input-label">Minutes</label><input class="num-input" type="number" min="0" max="120" placeholder="mins" id="f163m" onchange="save('f163m',this.value)"></div><div style="flex:1"><label class="input-label">Approx time</label><input class="time-input" type="time" id="f163t" onchange="save('f163t',this.value)"></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#164</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Sunset Light Viewed</h3><p class="why">Evening red light signals brain to wind down</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f164','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f164','no',this)">NO</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#165</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Blue Light Cutoff Time</h3><p class="why">Melatonin suppressed by blue light even at low intensity</p></div></div>
+    <input class="time-input" type="time" id="f165" onchange="save('f165',this.value)">
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#166</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Artificial Light After 9 PM</h3><p class="why">Bright indoor light delays sleep quality</p></div></div>
+    <div class="choice-row"><button class="choice-btn" onclick="saveChoice('f166','High',this)">💡 High</button><button class="choice-btn" onclick="saveChoice('f166','Medium',this)">Medium</button><button class="choice-btn" onclick="saveChoice('f166','Low',this)">🕯️ Low</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#167</span><div class="feat-text"><span class="timing-tag t-allday">DURING WORK</span><h3>Desk Setup Quality</h3><p class="why">Poor ergonomics = pain = cortisol = brain fog</p></div></div>
+    <div class="input-wrap"><label class="input-label">Posture, monitor, chair (1-5)</label><div class="slider-row"><input type="range" min="1" max="5" value="3" id="f167" oninput="sliderUpdate('f167')"><span class="slider-val" id="f167-v">3</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#168</span><div class="feat-text"><span class="timing-tag t-allday">DURING WORK</span><h3>Room Ventilation</h3><p class="why">CO2 buildup &gt;1000ppm = cognitive impairment</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f168','yes',this)">Fresh Air ✓</button><button class="yn-btn no" onclick="saveYN('f168','no',this)">Stuffy ✗</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#169</span><div class="feat-text"><span class="timing-tag t-allday">DURING WORK</span><h3>Temperature During Work</h3><p class="why">18-22°C = peak cognitive performance range</p></div></div>
+    <div class="choice-row"><button class="choice-btn" onclick="saveChoice('f169','Too cold',this)">🥶 Too cold</button><button class="choice-btn" onclick="saveChoice('f169','Optimal',this)">✅ Optimal</button><button class="choice-btn" onclick="saveChoice('f169','Too hot',this)">🥵 Too hot</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#170</span><div class="feat-text"><span class="timing-tag t-allday">ALL DAY</span><h3>Nature / Green Time</h3><p class="why">15 min in nature = cortisol down 12%</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f170','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f170','no',this)">NO</button></div>
+    <div class="input-wrap" style="margin-top:4px"><label class="input-label">Minutes</label><input class="num-input" type="number" min="0" max="300" placeholder="mins" id="f170m" onchange="save('f170m',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#171</span><div class="feat-text"><span class="timing-tag t-allday">DURING WORK</span><h3>Noise Environment</h3><p class="why">Uncontrolled noise = cortisol + attentional fragmentation</p></div></div>
+    <div class="choice-row"><button class="choice-btn" onclick="saveChoice('f171','Silent',this)">🔇 Silent</button><button class="choice-btn" onclick="saveChoice('f171','Managed',this)">✅ Managed</button><button class="choice-btn" onclick="saveChoice('f171','Disruptive',this)">🔊 Disruptive</button></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#172</span><div class="feat-text"><span class="timing-tag t-allday">DURING WORK</span><h3>Workspace Clutter</h3><p class="why">Visual clutter = cortical overload = reduced focus</p></div></div>
+    <div class="input-wrap"><label class="input-label">1 = spotless, 5 = chaotic</label><div class="slider-row"><input type="range" min="1" max="5" value="2" id="f172" oninput="sliderUpdate('f172')"><span class="slider-val" id="f172-v">2</span></div></div>
+  </div>
+</div>
+
+<!-- ======= EVENING ======= -->
+<div id="page-evening" class="section-page hidden">
+  <div class="section-header"><span class="sh-icon">📊</span><div class="sh-info"><h2>Evening Review & Day Score</h2><p>Night • How patterns become visible</p></div></div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#173</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Day Score (Overall)</h3><p class="why">Master end-of-day number; track weekly trend</p></div></div>
+    <div class="input-wrap"><div class="slider-row"><input type="range" min="1" max="10" value="5" id="f173" oninput="sliderUpdate('f173')"><span class="slider-val" id="f173-v">5</span></div></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#174</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Protocol Adherence</h3><p class="why">Compliance metric; consistency beats perfection</p></div></div>
+    <div class="input-wrap"><label class="input-label">% of planned habits completed</label><input class="num-input" type="number" min="0" max="100" placeholder="%" id="f174" onchange="save('f174',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#175</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Biggest Win Today</h3><p class="why">Reinforces dopamine reward for positive behaviors</p></div></div>
+    <textarea class="text-input" rows="2" placeholder="One-line win..." id="f175" onchange="save('f175',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#176</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Biggest Failure / Deviation</h3><p class="why">Pattern recognition for weak points</p></div></div>
+    <textarea class="text-input" rows="2" placeholder="One-line failure..." id="f176" onchange="save('f176',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#177</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Primary Dopamine Source Today</h3><p class="why">Weekly view reveals which source dominates</p></div></div>
+    <textarea class="text-input" rows="1" placeholder="Main source..." id="f177" onchange="save('f177',this.value)"></textarea>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#178</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Study vs Junk Dopamine Ratio</h3><p class="why">Core ratio to shift over 90 days</p></div></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="flex:1"><label class="input-label">Study %</label><input class="num-input" type="number" min="0" max="100" placeholder="%" id="f178s" onchange="save('f178s',this.value)"></div>
+      <div style="color:var(--text2);font-size:16px">:</div>
+      <div style="flex:1"><label class="input-label">Junk %</label><input class="num-input" type="number" min="0" max="100" placeholder="%" id="f178j" onchange="save('f178j',this.value)"></div>
+    </div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#179</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Tomorrow's Schedule Done</h3><p class="why">Pre-commitment reduces decision fatigue</p></div></div>
+    <div class="yn-row"><button class="yn-btn yes" onclick="saveYN('f179','yes',this)">YES</button><button class="yn-btn no" onclick="saveYN('f179','no',this)">NO</button></div>
+    <input class="time-input" type="time" placeholder="Time done" style="margin-top:6px" id="f179t" onchange="save('f179t',this.value)">
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#180</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Screen Time Total</h3><p class="why">Time audit; high screen = low everything else</p></div></div>
+    <div class="input-wrap"><label class="input-label">Hours (from phone settings)</label><input class="num-input" type="number" min="0" max="24" step="0.5" placeholder="hrs" id="f180" onchange="save('f180',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#181</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Hydration Total</h3><p class="why">End of day review of hydration compliance</p></div></div>
+    <div class="input-wrap"><label class="input-label">Total ml for day</label><input class="num-input" type="number" min="0" max="6000" placeholder="ml" id="f181" onchange="save('f181',this.value)"></div>
+  </div>
+
+  <div class="feature-card"><div class="feature-top"><span class="feat-num">#182</span><div class="feat-text"><span class="timing-tag t-evening">EVENING</span><h3>Most Focus-Destroying Event Today</h3><p class="why">Identify and eliminate over 30 days</p></div></div>
+    <textarea class="text-input" rows="1" placeholder="Trigger..." id="f182" onchange="save('f182',this.value)"></textarea>
+  </div>
+</div>
+
+<!-- ======= HISTORY ======= -->
+<div id="page-history" class="section-page hidden">
+  <div class="section-header"><span class="sh-icon">📅</span><div class="sh-info"><h2>History</h2><p>Past entries — track your 90-day rewire progress</p></div></div>
+  <div id="historyList">
+    <div class="empty-state"><div class="es-icon">📊</div><p>No history yet. Complete your first day and save to see your progress here.</p></div>
+  </div>
+</div>
+
+</div><!-- end pages -->
+
+<button class="save-fab" onclick="saveDay()">
+  <span>💾</span> Save Day
+</button>
+<div class="save-toast" id="saveToast">✅ Day saved!</div>
+
+<script>
+// ===================== STATE =====================
+const TODAY = new Date().toISOString().slice(0, 10);
+let currentPage = 'dashboard';
+let todayData = {};
+
+// ===================== SECTION COUNTS =====================
+const sectionCounts = {
+  morning: 20, dopamine: 20, brainfog: 20, sleep: 16,
+  fitness: 17, nutrition: 18, focus: 15, hormonal: 12,
+  gut: 12, mental: 12, environ: 10, evening: 10
+};
+
+// IDs to track for each section (simplified — we track first key per feature)
+const sectionKeys = {
+  morning: ['f001','f002','f003','f004','f005','f006','f007','f008','f009','f010','f011','f012','f013','f014','f015','f016','f017','f018','f019','f020'],
+  dopamine: ['f021','f022','f023','f024','f025','f026','f027','f028','f029','f030','f031','f032','f033','f034','f035','f036','f037','f038','f039','f040'],
+  brainfog: ['f041m','f042','f043','f044','f045','f046','f047','f048','f049','f050','f051','f052','f053b','f054','f055','f056','f057','f058','f059','f060'],
+  sleep: ['f061h','f062','f063','f064','f065','f066','f067','f068','f069','f070','f071','f072','f073','f074','f075','f076'],
+  fitness: ['f077','f078','f079','f080','f081','f082','f083','f084','f085','f086','f087','f088','f089','f090','f091','f092','f093'],
+  nutrition: ['f094a','f095','f096','f097','f098','f099','f100','f101','f102','f103','f104','f105','f106','f107','f108','f109','f110','f111'],
+  focus: ['f112','f113','f114','f115','f116','f117','f118','f119','f120','f121','f122','f123','f124','f125','f126'],
+  hormonal: ['f127','f128','f129','f130','f131','f132','f133','f134','f135','f136','f137','f138'],
+  gut: ['f139','f140','f141','f142','f143','f144','f145','f146','f147','f148','f149','f150'],
+  mental: ['f151m','f152','f153','f154','f155','f156','f157','f158','f159','f160','f161','f162'],
+  environ: ['f163m','f164','f165','f166','f167','f168','f169','f170','f171','f172'],
+  evening: ['f173','f174','f175','f176','f177','f178s','f179','f180','f181','f182']
+};
+
+// ===================== STORAGE =====================
+function getStorageKey(date) { return `drtrack_${date}`; }
+
+function loadDay(date) {
+  try {
+    const raw = localStorage.getItem(getStorageKey(date));
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+
+function saveDayData(date, data) {
+  try {
+    localStorage.setItem(getStorageKey(date), JSON.stringify(data));
+  } catch(e) { console.warn('Storage full'); }
+}
+
+function getAllDates() {
+  const dates = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('drtrack_')) {
+      dates.push(key.replace('drtrack_', ''));
+    }
+  }
+  return dates.sort().reverse();
+}
+
+// ===================== INIT =====================
+function init() {
+  // Set date badge
+  const d = new Date();
+  document.getElementById('dateBadge').textContent = 
+    d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  // Load today's data
+  todayData = loadDay(TODAY);
+
+  // Build bristol scales
+  buildBristol('bristol016', 'f016b');
+  buildBristol('bristol139', 'f139b');
+
+  // Restore saved values
+  restoreUI();
+
+  // Update dashboard
+  updateDashboard();
+  buildDayGrid();
+  loadHistory();
+}
+
+function buildBristol(containerId, key) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.innerHTML = '';
+  for (let i = 1; i <= 7; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'bristol-btn';
+    btn.textContent = i;
+    btn.onclick = function() {
+      save(key, i);
+      c.querySelectorAll('.bristol-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    };
+    if (todayData[key] == i) btn.classList.add('active');
+    c.appendChild(btn);
+  }
+}
+
+function restoreUI() {
+  // Restore sliders
+  document.querySelectorAll('input[type=range]').forEach(el => {
+    const val = todayData[el.id];
+    if (val !== undefined) {
+      el.value = val;
+      const vEl = document.getElementById(el.id + '-v');
+      if (vEl) vEl.textContent = val;
+    }
+  });
+
+  // Restore text/number/time inputs
+  document.querySelectorAll('input[type=number], input[type=time], textarea').forEach(el => {
+    if (el.id && todayData[el.id] !== undefined) {
+      el.value = todayData[el.id];
+    }
+  });
+
+  // Restore yes/no buttons
+  Object.keys(todayData).forEach(key => {
+    const el = document.getElementById(key);
+    if (!el) return;
+  });
+
+  // Restore yes/no state
+  document.querySelectorAll('.yn-btn').forEach(btn => {
+    // we'll handle via onclick restore below
+  });
+
+  // Restore saved choices and yn
+  Object.keys(todayData).forEach(key => {
+    const val = todayData[key];
+    if (val === 'yes' || val === 'no') {
+      // find yn-btn pair with this id pattern
+      const yns = document.querySelectorAll(`.yn-btn`);
+      yns.forEach(btn => {
+        const parent = btn.closest('.feature-card');
+        if (!parent) return;
+        // check onclick for key
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${key}'`)) {
+          if ((val === 'yes' && btn.classList.contains('yes')) ||
+              (val === 'no' && btn.classList.contains('no'))) {
+            btn.classList.add('active');
+          }
+        }
+      });
+    }
+  });
+
+  // Restore choice buttons
+  document.querySelectorAll('.choice-btn').forEach(btn => {
+    const onclick = btn.getAttribute('onclick') || '';
+    const match = onclick.match(/saveChoice\('([^']+)','([^']+)'/);
+    if (match) {
+      const key = match[1], val = match[2];
+      if (todayData[key] === val) btn.classList.add('active');
+    }
+  });
+}
+
+// ===================== SAVE FUNCTIONS =====================
+function save(key, value) {
+  todayData[key] = value;
+  updateDashboard();
+}
+
+function sliderUpdate(id) {
+  const el = document.getElementById(id);
+  const vEl = document.getElementById(id + '-v');
+  if (el && vEl) {
+    vEl.textContent = el.value;
+    save(id, parseInt(el.value));
+  }
+}
+
+function saveYN(key, val, btn) {
+  save(key, val);
+  const row = btn.closest('.yn-row');
+  if (row) {
+    row.querySelectorAll('.yn-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+}
+
+function saveChoice(key, val, btn) {
+  save(key, val);
+  const row = btn.closest('.choice-row');
+  if (row) {
+    row.querySelectorAll('.choice-btn').forEach(b => {
+      const onclick = b.getAttribute('onclick') || '';
+      if (onclick.includes(`'${key}'`)) b.classList.remove('active');
+    });
+    btn.classList.add('active');
+  }
+}
+
+// ===================== NAVIGATION =====================
+function showPage(pageId) {
+  document.querySelectorAll('#pages > div').forEach(p => p.classList.add('hidden'));
+  document.getElementById('page-' + pageId).classList.remove('hidden');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(`'${pageId}'`)) {
+      b.classList.add('active');
+    }
+  });
+  currentPage = pageId;
+  window.scrollTo(0, 0);
+}
+
+// ===================== DASHBOARD UPDATE =====================
+function updateDashboard() {
+  // Day score
+  const ds = todayData['f173'];
+  document.getElementById('dash-dayScore').textContent = ds || '—';
+
+  // Morning mood
+  const mm = todayData['f010'];
+  document.getElementById('dash-mood').textContent = mm || '—';
+
+  // Streak
+  const streak = todayData['f034'];
+  document.getElementById('dash-streak').textContent = streak || '0';
+
+  // Progress
+  let filled = 0;
+  Object.values(sectionKeys).forEach(keys => {
+    keys.forEach(k => { if (todayData[k] !== undefined && todayData[k] !== '') filled++; });
+  });
+  const total = 182;
+  const pct = Math.round((filled / total) * 100);
+  document.getElementById('dash-progress').textContent = `${filled} / ${total}`;
+  document.getElementById('dash-pb').style.width = pct + '%';
+
+  // Section progress
+  Object.keys(sectionKeys).forEach(sec => {
+    const keys = sectionKeys[sec];
+    const done = keys.filter(k => todayData[k] !== undefined && todayData[k] !== '').length;
+    const el = document.getElementById('p-' + sec);
+    if (el) el.textContent = `${done}/${keys.length}`;
+  });
+
+  // Master metrics
+  const mm1 = todayData['f010'] || 0;
+  const mm2 = todayData['f116'] || 0;
+  const mm3 = todayData['f174'] || 0;
+  document.getElementById('mm1-val').textContent = mm1 || '—';
+  document.getElementById('mm2-val').textContent = mm2 || '—';
+  document.getElementById('mm3-val').textContent = mm3 ? mm3 + '%' : '—';
+  document.getElementById('mm1-fill').style.width = (mm1 * 10) + '%';
+  document.getElementById('mm2-fill').style.width = (mm2 * 10) + '%';
+  document.getElementById('mm3-fill').style.width = (mm3 || 0) + '%';
+
+  // Protocol adherence for mm3
+  if (mm3) {
+    document.getElementById('mm3-fill').style.width = mm3 + '%';
+  }
+}
+
+// ===================== 90-DAY GRID =====================
+function buildDayGrid() {
+  const grid = document.getElementById('dayGrid');
+  grid.innerHTML = '';
+
+  // Find start date (90 days ago from today)
+  const today = new Date(TODAY);
+  const startDate = new Date(today);
+  startDate.setDate(startDate.getDate() - 89);
+
+  const allDates = new Set(getAllDates());
+
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    const ds = d.toISOString().slice(0, 10);
+
+    const dot = document.createElement('div');
+    dot.className = 'day-dot';
+    dot.title = ds;
+
+    if (ds === TODAY) {
+      dot.classList.add('today');
+    } else if (allDates.has(ds)) {
+      const data = loadDay(ds);
+      const keys = Object.keys(data).length;
+      if (keys > 50) dot.classList.add('done');
+      else if (keys > 0) dot.classList.add('partial');
+    }
+
+    grid.appendChild(dot);
+  }
+}
+
+// ===================== SAVE DAY =====================
+function saveDay() {
+  saveDayData(TODAY, todayData);
+
+  // Show toast
+  const toast = document.getElementById('saveToast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+
+  // Rebuild grid + history
+  buildDayGrid();
+  loadHistory();
+  updateDashboard();
+}
+
+// ===================== HISTORY =====================
+function loadHistory() {
+  const list = document.getElementById('historyList');
+  const dates = getAllDates().filter(d => d !== TODAY);
+
+  if (dates.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="es-icon">📊</div><p>No history yet. Complete your first day and save to see your progress here.</p></div>';
+    return;
+  }
+
+  list.innerHTML = dates.slice(0, 30).map(date => {
+    const data = loadDay(date);
+    const ds = data['f173'] || '—';
+    const mood = data['f010'] || '—';
+    const adh = data['f174'] ? data['f174'] + '%' : '—';
+    const enjoy = data['f116'] || '—';
+    const filled = Object.keys(data).length;
+    const streak = data['f034'] || '0';
+    const d = new Date(date + 'T12:00:00');
+    const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return `
+    <div class="history-entry">
+      <div class="history-date">
+        <span>${label}</span>
+        <span style="color:var(--text2);font-size:10px">${filled} fields</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <div class="history-score-big">${ds}</div>
+        <div style="color:var(--text2);font-size:12px">Day Score</div>
+      </div>
+      <div class="history-stats">
+        <div class="hs-item"><div class="hs-val">${mood}</div><div class="hs-key">Mood</div></div>
+        <div class="hs-item"><div class="hs-val">${enjoy}</div><div class="hs-key">Study Enjoy</div></div>
+        <div class="hs-item"><div class="hs-val">${adh}</div><div class="hs-key">Adherence</div></div>
+        <div class="hs-item"><div class="hs-val">${streak}</div><div class="hs-key">Streak</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===================== AUTO-SAVE =====================
+// Auto-save every 30 seconds silently
+setInterval(() => {
+  if (Object.keys(todayData).length > 0) {
+    saveDayData(TODAY, todayData);
+  }
+}, 30000);
+
+// ===================== RUN =====================
+init();
+</script>
+</body>
+</html>
